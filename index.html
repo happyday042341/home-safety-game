@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>居家安全守護者 - 找出潛在危險</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Microsoft JhengHei', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .game-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+
+    .game-header {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .game-title {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+
+    .game-subtitle { font-size: 1.2rem; opacity: 0.9; }
+
+    .game-stats {
+      display: flex;
+      justify-content: space-around;
+      background: #f8f9fa;
+      padding: 20px;
+      border-bottom: 3px solid #e9ecef;
+    }
+
+    .stat-item {
+      text-align: center;
+      padding: 15px;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      min-width: 120px;
+    }
+
+    .stat-number { font-size: 2rem; font-weight: bold; color: #ff6b6b; display: block; }
+    .stat-label { color: #666; font-size: 0.9rem; margin-top: 5px; }
+
+    .image-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+      background: #f8f9fa;
+      min-height: 700px;
+    }
+
+    .house-image {
+      width: 100%;
+      max-width: 900px;
+      height: auto;
+      min-height: 600px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      cursor: crosshair;
+      background: #f0f0f0;
+    }
+
+    /* 危險點：預設完全隱藏，不顯示紅色脈動 */
+    .danger-point {
+      position: absolute;
+      left: 0; top: 0;
+      width: 30px; height: 30px;
+      border: 3px solid #ff4757;
+      border-radius: 50%;
+      background: rgba(255, 71, 87, 0.2);
+      cursor: pointer;
+      transform: translate(-50%, -50%);
+      display: none;              /* 直到被點到才出現 */
+      opacity: 0;                 /* 先透明，顯示時過渡 */
+      transition: transform .2s ease, opacity .2s ease, background .2s ease;
+    }
+
+    /* 只有被發現(revealed)後，才啟用脈動動畫與顯示 */
+    .danger-point.revealed {
+      display: block;
+      opacity: 1;
+      animation: pulse 2s infinite;
+    }
+
+    .danger-point:hover { background: rgba(255, 71, 87, 0.4); transform: translate(-50%, -50%) scale(1.1); }
+
+    .protection-sticker {
+      position: absolute;
+      width: 60px; height: 60px;
+      background: linear-gradient(135deg, #2ed573, #1e90ff);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 1.5rem; font-weight: bold;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+      transform: translate(-50%, -50%);
+      animation: sticker-appear 0.5s ease-out;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
+    }
+
+    @keyframes sticker-appear {
+      0% { transform: translate(-50%, -50%) scale(0) rotate(180deg); }
+      100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+    }
+
+    .modal {
+      display: none;
+      position: fixed; inset: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+      z-index: 1000;
+      justify-content: center; align-items: center;
+    }
+
+    .modal-content {
+      background: white; padding: 40px; border-radius: 20px; text-align: center;
+      max-width: 500px; margin: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+
+    .modal-title { font-size: 1.8rem; color: #ff6b6b; margin-bottom: 15px; font-weight: bold; }
+    .modal-description { font-size: 1.1rem; color: #666; line-height: 1.6; margin-bottom: 25px; }
+
+    .modal-button {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: white; border: none; padding: 15px 30px; border-radius: 25px;
+      font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease;
+    }
+
+    .modal-button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+
+    .completion-modal { background: linear-gradient(135deg, #2ed573, #1e90ff); color: white; }
+    .completion-modal .modal-title { color: white; font-size: 2.2rem; }
+
+    .instructions { background: #e3f2fd; padding: 20px; margin: 20px 30px; border-radius: 15px; border-left: 5px solid #2196f3; }
+    .instructions h3 { color: #1976d2; margin-bottom: 10px; font-size: 1.3rem; }
+    .instructions p { color: #555; line-height: 1.6; }
+
+    @media (max-width: 768px) {
+      .game-title { font-size: 2rem; }
+      .game-stats { flex-direction: column; gap: 15px; }
+      .stat-item { margin: 0 auto; }
+      .image-container { padding: 15px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="game-header">
+      <h1 class="game-title">🏠 居家安全守護者</h1>
+      <p class="game-subtitle">找出潛在危險，貼上守護標籤保護家人安全</p>
+    </div>
+
+    <div class="instructions">
+      <h3>🎯 遊戲說明</h3>
+      <p>仔細觀察居家圖片，點擊您發現的潛在危險處。每找到一處危險，就會出現一張守護標籤來修正問題。目標是找出至少5處危險，讓家庭更安全！</p>
+    </div>
+
+    <div class="game-stats">
+      <div class="stat-item">
+        <span class="stat-number" id="found-count">0</span>
+        <div class="stat-label">已找到危險</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number" id="total-count">18</span>
+        <div class="stat-label">總危險數</div>
+      </div>
+      <div class="stat-item">
+        <span class="stat-number" id="progress">0%</span>
+        <div class="stat-label">完成進度</div>
+      </div>
+    </div>
+
+    <div class="image-container">
+      <!-- 注意：postimg.cc 提供的頁面連結可能不是「圖片直連」；若無法顯示，請改用該服務提供的 Direct Link（通常以 i.postimg.cc 開頭，並以 .jpg/.png 結尾） -->
+      <img
+        src="https://i.postimg.cc/zGxLCdrT/Chat-GPT-Image-2025-7-2-02-52-51.png"
+        alt="居家安全檢查圖"
+        class="house-image"
+        id="house-image"
+        referrerpolicy="no-referrer"
+        crossorigin="anonymous"
+        onerror="this.alt='圖片載入失敗，請改用圖片直連（.jpg/.png）';"
+      />
+    </div>
+  </div>
+
+  <!-- 危險說明彈窗 -->
+  <div class="modal" id="danger-modal">
+    <div class="modal-content">
+      <h2 class="modal-title" id="modal-title">發現危險！</h2>
+      <p class="modal-description" id="modal-description"></p>
+      <button class="modal-button" onclick="closeDangerModal()">貼上守護標籤 🛡️</button>
+    </div>
+  </div>
+
+  <!-- 完成遊戲彈窗 -->
+  <div class="modal" id="completion-modal">
+    <div class="modal-content completion-modal">
+      <h2 class="modal-title">🎉 恭喜完成！</h2>
+      <p class="modal-description">您已經成功找出足夠的居家危險並貼上守護標籤！您的家現在更安全了。繼續尋找剩餘的危險點，讓家庭環境更加完善。</p>
+      <button class="modal-button" onclick="closeCompletionModal()" style="background: rgba(255,255,255,0.2); border: 2px solid white;">繼續遊戲</button>
+    </div>
+  </div>
+
+  <script>
+    // 危險點資料 (根據實際圖片精確定位)
+    const dangerData = [
+  // ▶️ 廚房 (紅色)
+  { x: 64, y: 26, title: "廚房爐火沒關", description: "鍋子在爐上煮東西但沒關火也沒蓋鍋蓋，有火災和燙傷風險。", room: "廚房" },
+  { x: 60, y: 32, title: "刀具未收納", description: "刀子放在桌上沒收好，容易造成割傷，應放入刀架或抽屜。", room: "廚房" },
+  { x: 62, y: 22, title: "瓦斯爐旁毛巾", description: "瓦斯爐邊晾毛巾有火災風險，毛巾應遠離火源晾曬。", room: "廚房" },
+
+  // ▶️ 客廳 (藍色)
+  { x: 86, y: 18, title: "窗簾拉繩", description: "低掛的窗簾拉繩沒有綁起來，可能造成幼兒纏繞危險，應綁高或使用安全扣。", room: "客廳" },
+  { x: 57, y: 40, title: "藥品放置不當", description: "茶几上放置藥品，幼兒容易誤食，應放在高處或上鎖櫃子裡。", room: "客廳" },
+  { x: 53, y: 45, title: "桌角鋒利", description: "茶几四角鋒利，幼兒跑動時容易撞傷，應安裝防撞角套。", room: "客廳" },
+  { x: 56, y: 58, title: "熱水壺放地上", description: "熱水壺放在地上，幼兒容易絆倒或拉扯電線燙傷，應放在安全高處。", room: "客廳" },
+  { x: 90, y: 20, title: "窗台過低", description: "窗戶窗台高度很低，幼兒容易爬上跌落，應安裝窗戶安全鎖。", room: "客廳" },
+
+  // ▶️ 房間 (綠色)
+  { x: 33, y: 63, title: "嬰兒床無護欄", description: "嬰兒床邊沒有護欄，嬰兒可能跌落，應安裝床邊護欄。", room: "臥室" },
+  { x: 30, y: 74, title: "地面散落小零件", description: "小零件掉在地上，嬰兒可能誤食窒息，應立即清理。", room: "臥室" },
+
+  // ▶️ 浴室 (紫色)
+  { x: 63, y: 76, title: "地板濕滑", description: "浴室地板濕滑沒有防滑墊，容易滑倒受傷，應鋪設防滑墊。", room: "浴室" },
+  { x: 70, y: 63, title: "剪刀放洗手台", description: "剪刀放在洗手台上，幼兒容易拿到受傷，應收納在安全處。", room: "浴室" },
+  { x: 73, y: 71, title: "清潔劑亂放", description: "清潔劑放在地上，幼兒可能誤食中毒，應放在高處或上鎖櫃子。", room: "浴室" }
+];
+
+    let foundDangers = [];
+    let currentDangerIndex = -1;
+    let gameCompleted = false;
+
+    function initGame() {
+      const image = document.getElementById('house-image');
+      // 動態顯示總數
+      const totalCountEl = document.getElementById('total-count');
+      if (totalCountEl) totalCountEl.textContent = dangerData.length;
+      image.addEventListener('load', createDangerPoints);
+      if (image.complete) createDangerPoints();
+    }
+
+    function createDangerPoints() {
+      const container = document.querySelector('.image-container');
+      const image = document.getElementById('house-image');
+
+      // 點擊圖片：判定是否命中隱藏危險點
+      image.onclick = function (event) {
+        const rect = image.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 100;
+        const y = ((event.clientY - rect.top) / rect.height) * 100;
+
+        dangerData.forEach((danger, index) => {
+          if (foundDangers.includes(index)) return;
+          const distance = Math.hypot(x - danger.x, y - danger.y);
+          if (distance <= 8) { // 8% 容錯
+            revealDangerPoint(index);
+            openDangerModal(index);
+          }
+        });
+      };
+
+      // 事先建立點位元素，但保持隱藏
+      dangerData.forEach((danger, index) => {
+        const point = document.createElement('div');
+        point.className = 'danger-point';
+        point.style.left = danger.x + '%';
+        point.style.top = danger.y + '%';
+        point.title = `${danger.room} - ${danger.title}`;
+        point.addEventListener('click', () => openDangerModal(index));
+        container.appendChild(point);
+      });
+    }
+
+    // 顯示危險點（被找到時才出現並脈動）
+    function revealDangerPoint(index) {
+      const els = document.querySelectorAll('.danger-point');
+      const el = els[index];
+      if (!el.classList.contains('revealed')) {
+        el.classList.add('revealed');
+      }
+    }
+
+    function openDangerModal(index) {
+      if (foundDangers.includes(index)) return;
+      currentDangerIndex = index;
+      const danger = dangerData[index];
+      document.getElementById('modal-title').textContent = `🚨 ${danger.room} - ${danger.title}`;
+      document.getElementById('modal-description').textContent = danger.description;
+      document.getElementById('danger-modal').style.display = 'flex';
+    }
+
+    function closeDangerModal() {
+      document.getElementById('danger-modal').style.display = 'none';
+      if (currentDangerIndex !== -1) {
+        addProtectionSticker(currentDangerIndex);
+        foundDangers.push(currentDangerIndex);
+        updateStats();
+        // 找到後隱藏紅圈
+        const els = document.querySelectorAll('.danger-point');
+        els[currentDangerIndex].classList.remove('revealed');
+        els[currentDangerIndex].style.display = 'none';
+        currentDangerIndex = -1;
+        if (foundDangers.length >= 5 && !gameCompleted) {
+          gameCompleted = true;
+          setTimeout(() => {
+            document.getElementById('completion-modal').style.display = 'flex';
+          }, 600);
+        }
+      }
+    }
+
+    function addProtectionSticker(index) {
+      const container = document.querySelector('.image-container');
+      const danger = dangerData[index];
+      const sticker = document.createElement('div');
+      sticker.className = 'protection-sticker';
+      sticker.style.left = danger.x + '%';
+      sticker.style.top = danger.y + '%';
+      sticker.innerHTML = '🛡️';
+      sticker.title = `已修正：${danger.title}`;
+      container.appendChild(sticker);
+    }
+
+    function updateStats() {
+      const foundCount = foundDangers.length;
+      const totalCount = dangerData.length;
+      const progress = Math.round((foundCount / totalCount) * 100);
+      document.getElementById('found-count').textContent = foundCount;
+      document.getElementById('progress').textContent = progress + '%';
+    }
+
+    function closeCompletionModal() {
+      document.getElementById('completion-modal').style.display = 'none';
+    }
+
+    window.onclick = function (event) {
+      const dangerModal = document.getElementById('danger-modal');
+      const completionModal = document.getElementById('completion-modal');
+      if (event.target === dangerModal) dangerModal.style.display = 'none';
+      if (event.target === completionModal) completionModal.style.display = 'none';
+    };
+
+    window.onload = initGame;
+  </script>
+</body>
+</html>

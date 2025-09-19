@@ -2,200 +2,64 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>居家安全守護者 - 找出潛在危險</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
-    body {
-      font-family: 'Microsoft JhengHei', Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-    }
-
-    .game-container {
-      max-width: 1200px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-      overflow: hidden;
-    }
-
-    .game-header {
-      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-      color: white;
-      padding: 30px;
-      text-align: center;
-    }
-
-    .game-title {
-      font-size: 2.5rem;
-      font-weight: bold;
-      margin-bottom: 10px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-
-    .game-subtitle { font-size: 1.2rem; opacity: 0.9; }
-
-    .game-stats {
-      display: flex;
-      justify-content: space-around;
-      background: #f8f9fa;
-      padding: 20px;
-      border-bottom: 3px solid #e9ecef;
-    }
-
-    .stat-item {
-      text-align: center;
-      padding: 15px;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-      min-width: 120px;
-    }
-
-    .stat-number { font-size: 2rem; font-weight: bold; color: #ff6b6b; display: block; }
-    .stat-label { color: #666; font-size: 0.9rem; margin-top: 5px; }
-
-    .image-container {
-      position: relative;
-      display: flex;
-      justify-content: center;
-      padding: 40px;
-      background: #f8f9fa;
-      min-height: 700px;
-    }
-
-    .house-image {
-      width: 100%;
-      max-width: 900px;
-      height: auto;
-      min-height: 600px;
-      border-radius: 15px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      cursor: crosshair;
-      background: #f0f0f0;
-    }
-
-    /* 危險點：預設完全隱藏 */
-    .danger-point {
-      position: absolute;
-      left: 0; top: 0;
-      width: 30px; height: 30px;
-      border: 3px solid #ff4757;
-      border-radius: 50%;
-      background: rgba(255, 71, 87, 0.2);
-      cursor: pointer;
-      transform: translate(-50%, -50%);
-      display: none;
-      opacity: 0;
-      transition: transform .2s ease, opacity .2s ease, background .2s ease;
-    }
-    .danger-point.revealed {
-      display: block;
-      opacity: 1;
-      animation: pulse 2s infinite;
-    }
-    .danger-point:hover { background: rgba(255, 71, 87, 0.4); transform: translate(-50%, -50%) scale(1.1); }
-
-    .protection-sticker {
-      position: absolute;
-      width: 60px; height: 60px;
-      background: linear-gradient(135deg, #2ed573, #1e90ff);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      color: white; font-size: 1.5rem; font-weight: bold;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-      transform: translate(-50%, -50%);
-      animation: sticker-appear 0.5s ease-out;
-    }
-
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7); }
-      70% { box-shadow: 0 0 0 10px rgba(255, 71, 87, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0); }
-    }
-    @keyframes sticker-appear {
-      0% { transform: translate(-50%, -50%) scale(0) rotate(180deg); }
-      100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
-    }
-
-    .modal {
-      display: none;
-      position: fixed; inset: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
-      z-index: 1000;
-      justify-content: center; align-items: center;
-    }
-    .modal-content {
-      background: white; padding: 40px; border-radius: 20px; text-align: center;
-      max-width: 500px; margin: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    }
-    .modal-title { font-size: 1.8rem; color: #ff6b6b; margin-bottom: 15px; font-weight: bold; }
-    .modal-description { font-size: 1.1rem; color: #666; line-height: 1.6; margin-bottom: 25px; }
-
-    .modal-button {
-      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-      color: white; border: none; padding: 15px 30px; border-radius: 25px;
-      font-size: 1.1rem; cursor: pointer; transition: all 0.3s ease;
-    }
-    .modal-button:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
-
-    .completion-modal { background: linear-gradient(135deg, #2ed573, #1e90ff); color: white; }
-    .completion-modal .modal-title { color: white; font-size: 2.2rem; }
-
-    .instructions { background: #e3f2fd; padding: 20px; margin: 20px 30px; border-radius: 15px; border-left: 5px solid #2196f3; }
-    .instructions h3 { color: #1976d2; margin-bottom: 10px; font-size: 1.3rem; }
-    .instructions p { color: #555; line-height: 1.6; }
-
-    @media (max-width: 768px) {
-      .game-title { font-size: 2rem; }
-      .game-stats { flex-direction: column; gap: 15px; }
-      .stat-item { margin: 0 auto; }
-      .image-container { padding: 15px; }
-    }
+    *{box-sizing:border-box}
+    body{font-family:'Microsoft JhengHei',Arial,sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);margin:0;padding:20px;min-height:100vh}
+    .game-container{max-width:1200px;margin:auto;background:#fff;border-radius:20px;box-shadow:0 20px 40px rgba(0,0,0,.1);overflow:hidden}
+    .game-header{background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;padding:24px;text-align:center}
+    .game-title{margin:0;font-size:2rem;font-weight:700;text-shadow:2px 2px 4px rgba(0,0,0,.25)}
+    .game-stats{display:flex;gap:16px;justify-content:center;background:#f7f7f9;border-top:1px solid #eee;border-bottom:1px solid #eee;padding:12px}
+    .stat-item{background:#fff;border-radius:12px;box-shadow:0 6px 14px rgba(0,0,0,.08);padding:10px 16px;text-align:center;min-width:120px}
+    .stat-number{display:block;color:#ff6b6b;font-weight:700;font-size:1.6rem}
+    .stat-label{font-size:.9rem;color:#666}
+    .image-wrap{position:relative;background:#f7f7f9;padding:24px;display:flex;justify-content:center}
+    .house-image{max-width:900px;width:100%;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.2);cursor:crosshair;background:#eee}
+    /* hidden hot-spots */
+    .danger-point{position:absolute;width:30px;height:30px;border:3px solid #ff4757;border-radius:50%;background:rgba(255,71,87,.18);transform:translate(-50%,-50%);display:none;opacity:0;transition:.2s}
+    .danger-point.revealed{display:block;opacity:1;animation:pulse 2s infinite}
+    .danger-point:hover{background:rgba(255,71,87,.35);transform:translate(-50%,-50%) scale(1.08)}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,71,87,.6)}70%{box-shadow:0 0 0 12px rgba(255,71,87,0)}100%{box-shadow:0 0 0 0 rgba(255,71,87,0)}}
+    .protection-sticker{position:absolute;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#2ed573,#1e90ff);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.4rem;box-shadow:0 6px 18px rgba(0,0,0,.25);transform:translate(-50%,-50%);animation:pop .45s ease}
+    @keyframes pop{0%{transform:translate(-50%,-50%) scale(0) rotate(180deg)}100%{transform:translate(-50%,-50%) scale(1) rotate(0)}}
+    .modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.8);z-index:999}
+    .modal-content{background:#fff;border-radius:16px;box-shadow:0 20px 40px rgba(0,0,0,.35);max-width:520px;margin:16px;padding:28px;text-align:center}
+    .modal-title{margin:0 0 10px;color:#ff6b6b}
+    .btn{appearance:none;border:0;border-radius:24px;padding:12px 20px;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;font-weight:600;cursor:pointer}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(0,0,0,.2)}
+    /* 校正模式 */
+    .toolbar{display:flex;gap:8px;justify-content:center;padding:10px;background:#f2f5ff;border-top:1px solid #e6ebff}
+    .toolbtn{border:1px solid #d0d7ff;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
+    .toolbtn.active{background:#e6ecff}
+    .grid{position:absolute;inset:24px;pointer-events:none}
+    .grid canvas{width:100%;height:100%;opacity:.35}
   </style>
 </head>
 <body>
   <div class="game-container">
     <div class="game-header">
       <h1 class="game-title">🏠 居家安全守護者</h1>
-      <p class="game-subtitle">找出潛在危險，貼上守護標籤保護家人安全</p>
-    </div>
-
-    <div class="instructions">
-      <h3>🎯 遊戲說明</h3>
-      <p>仔細觀察居家圖片，點擊您發現的潛在危險處。每找到一處危險，就會出現一張守護標籤來修正問題。目標是找出至少5處危險，讓家庭更安全！</p>
+      <p>依照圈圈位置找出潛在危險，貼上守護標籤</p>
     </div>
 
     <div class="game-stats">
-      <div class="stat-item">
-        <span class="stat-number" id="found-count">0</span>
-        <div class="stat-label">已找到危險</div>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number" id="total-count">13</span>
-        <div class="stat-label">總危險數</div>
-      </div>
-      <div class="stat-item">
-        <span class="stat-number" id="progress">0%</span>
-        <div class="stat-label">完成進度</div>
-      </div>
+      <div class="stat-item"><span class="stat-number" id="found-count">0</span><div class="stat-label">已找到危險</div></div>
+      <div class="stat-item"><span class="stat-number" id="total-count">0</span><div class="stat-label">總危險數</div></div>
+      <div class="stat-item"><span class="stat-number" id="progress">0%</span><div class="stat-label">完成進度</div></div>
     </div>
 
-    <div class="image-container">
-      <img
-        src="https://i.postimg.cc/zGxLCdrT/Chat-GPT-Image-2025-7-2-02-52-51.png"
-        alt="居家安全檢查圖"
-        class="house-image"
-        id="house-image"
-        referrerpolicy="no-referrer"
-        crossorigin="anonymous"
-        onerror="this.alt='圖片載入失敗，請改用圖片直連（.jpg/.png）';"
-      />
+    <div class="image-wrap">
+      <img id="house-image" class="house-image"
+           src="https://i.postimg.cc/zGxLCdrT/Chat-GPT-Image-2025-7-2-02-52-51.png"
+           alt="居家安全檢查圖" crossorigin="anonymous" referrerpolicy="no-referrer">
+      <div class="grid" id="grid" style="display:none"><canvas id="gridcv"></canvas></div>
+    </div>
+
+    <div class="toolbar">
+      <button class="toolbtn" id="toggleCalib">切換校正模式</button>
+      <button class="toolbtn" id="copyJSON">複製座標 JSON</button>
+      <span style="color:#666">（校正模式：顯示所有點位；方向鍵微調、S=+1%、W=-1%、A=左、D=右、↑↓←→=0.2%）</span>
     </div>
   </div>
 
@@ -203,155 +67,240 @@
   <div class="modal" id="danger-modal">
     <div class="modal-content">
       <h2 class="modal-title" id="modal-title">發現危險！</h2>
-      <p class="modal-description" id="modal-description"></p>
-      <button class="modal-button" onclick="closeDangerModal()">貼上守護標籤 🛡️</button>
+      <p id="modal-description"></p>
+      <button class="btn" onclick="closeDangerModal()">貼上守護標籤 🛡️</button>
     </div>
   </div>
 
   <!-- 完成遊戲彈窗 -->
   <div class="modal" id="completion-modal">
-    <div class="modal-content completion-modal">
-      <h2 class="modal-title">🎉 恭喜完成！</h2>
-      <p class="modal-description">您已經成功找出足夠的居家危險並貼上守護標籤！您的家現在更安全了。繼續尋找剩餘的危險點，讓家庭環境更加完善。</p>
-      <button class="modal-button" onclick="closeCompletionModal()" style="background: rgba(255,255,255,0.2); border: 2px solid white;">繼續遊戲</button>
+    <div class="modal-content" style="background:linear-gradient(135deg,#2ed573,#1e90ff);color:#fff">
+      <h2 class="modal-title" style="color:#fff">🎉 恭喜完成！</h2>
+      <p>您已經成功找出足夠的居家危險並貼上守護標籤！</p>
+      <button class="btn" onclick="closeCompletionModal()" style="background:rgba(255,255,255,.18);border:2px solid #fff">繼續遊戲</button>
     </div>
   </div>
 
-  <script>
-    // ✅ 調整後 dangerData（依你的指示位移）
-    const dangerData = [
-      // ▶️ 廚房 (紅色) — 全部往左上 20%
-      { x: 15, y: 23, title: "廚房爐火沒關", description: "鍋子在爐上煮東西但沒關火也沒蓋鍋蓋，有火災和燙傷風險。", room: "廚房" },
-      { x: 9,  y: 27, title: "刀具未收納", description: "刀子放在桌上沒收好，容易造成割傷，應放入刀架或抽屜。", room: "廚房" },
-      { x: 5,  y: 30, title: "瓦斯爐旁毛巾", description: "瓦斯爐邊晾毛巾有火災風險，毛巾應遠離火源晾曬。", room: "廚房" },
+<script>
+// 依你的圈圈重新估(更貼近視覺)；之後可用「校正模式」微調
+const dangerData = [
+  // ▶️ 廚房(紅)
+  { id:'stove_fire',   x: 26.5, y: 22.0, title:'廚房爐火沒關', room:'廚房',
+    description:'鍋子在爐上煮東西但沒關火也沒蓋鍋蓋，有火災和燙傷風險。' },
+  { id:'knife_out',    x: 17.2, y: 31.8, title:'刀具未收納', room:'廚房',
+    description:'刀子放在桌上沒收好，容易造成割傷，應放入刀架或抽屜。' },
+  { id:'towel_by_stove',x: 12.2, y: 37.2, title:'瓦斯爐旁放毛巾', room:'廚房',
+    description:'瓦斯爐邊晾毛巾有火災風險，毛巾應遠離火源晾曬。' },
 
-      // ▶️ 客廳 (藍色)
-      { x: 53, y: 15, title: "窗簾拉繩", description: "低掛的窗簾拉繩沒有綁起來，可能造成幼兒纏繞危險，應綁高或使用安全扣。", room: "客廳" }, // 左上 30°
-      { x: 70, y: 28, title: "藥品放置不當", description: "茶几上放置藥品，幼兒容易誤食，應放在高處或上鎖櫃子裡。", room: "客廳" },
-      { x: 48, y: 27, title: "桌角鋒利", description: "茶几四角鋒利，幼兒跑動時容易撞傷，應安裝防撞角套。", room: "客廳" }, // 左上 20%
-      { x: 81, y: 40, title: "電暖爐放地上", description: "電暖爐放在地上，幼兒可能拉扯電線燙傷，應放在安全高處。", room: "客廳" }, // 左 2%
-      { x: 75, y: 19, title: "窗台過低", description: "窗戶窗台高度很低，幼兒容易爬上跌落，應安裝窗戶安全鎖。", room: "客廳" }, // 上 1%
+  // ▶️ 客廳(藍)
+  { id:'curtain_cord', x: 60.8, y: 13.6, title:'窗簾拉繩', room:'客廳',
+    description:'低掛的窗簾拉繩沒有綁起來，可能造成幼兒纏繞危險，應綁高或使用安全扣。' },
+  { id:'low_sill',     x: 86.2, y: 16.0, title:'窗台過低', room:'客廳',
+    description:'窗戶窗台高度很低，幼兒容易爬上跌落，應安裝窗戶安全鎖。' },
+  { id:'medicine_table',x: 70.8, y: 28.0, title:'藥品放置不當', room:'客廳',
+    description:'茶几上放置藥品，幼兒容易誤食，應放在高處或上鎖櫃子裡。' },
+  { id:'sharp_table',  x: 69.5, y: 38.3, title:'桌角鋒利', room:'客廳',
+    description:'茶几四角鋒利，幼兒跑動時容易撞傷，應安裝防撞角套。' },
+  { id:'heater_floor', x: 84.0, y: 36.5, title:'電暖爐放地上', room:'客廳',
+    description:'電暖爐放在地上，幼兒可能拉扯電線燙傷，應放在安全高處。' },
 
-      // ▶️ 房間 (綠色)
-      { x: 33, y: 70, title: "嬰兒床無護欄", description: "嬰兒床邊沒有護欄，嬰兒可能跌落，應安裝床邊護欄。", room: "房間" },
-      { x: 21, y: 75, title: "地面散落小零件", description: "小零件掉在地上，嬰兒可能誤食窒息，應立即清理。", room: "房間" }, // 左 1%
+  // ▶️ 房間(綠)
+  { id:'crib_no_guard',x: 43.0, y: 66.8, title:'嬰兒床無護欄', room:'房間',
+    description:'嬰兒床邊沒有護欄，嬰兒可能跌落，應安裝床邊護欄。' },
+  { id:'small_parts',  x: 33.0, y: 83.0, title:'地面散落小零件', room:'房間',
+    description:'小零件掉在地上，嬰兒可能誤食窒息，應立即清理。' },
 
-      // ▶️ 浴室 (紫色)
-      { x: 70, y: 75, title: "地板濕滑", description: "浴室地板濕滑沒有防滑墊，容易滑倒受傷，應鋪設防滑墊。", room: "浴室" },
-      { x: 78, y: 65, title: "剪刀放洗手台", description: "剪刀放在洗手台上，幼兒容易拿到受傷，應收納在安全處。", room: "浴室" },
-      { x: 70, y: 68, title: "清潔劑亂放", description: "清潔劑放在地上，幼兒可能誤食中毒，應放在高處或上鎖櫃子。", room: "浴室" } // 右 20% → +5%
-    ];
+  // ▶️ 浴室(紫)
+  { id:'cleanser_table',x: 62.0, y: 44.8, title:'清潔劑亂放', room:'浴室',
+    description:'清潔劑放在桌上，幼兒可能誤食中毒，應放在高處或上鎖櫃子。' },
+  { id:'scissors_sink',x: 77.0, y: 56.2, title:'剪刀放洗手台', room:'浴室',
+    description:'剪刀放在洗手台上，幼兒容易拿到受傷，應收納在安全處。' },
+  { id:'slippery_floor',x: 66.5, y: 73.2, title:'地板濕滑', room:'浴室',
+    description:'浴室地板濕滑沒有防滑墊，容易滑倒受傷，應鋪設防滑墊。' },
+  { id:'cleanser_right',x: 88.8, y: 61.5, title:'清潔劑亂放', room:'浴室',
+    description:'清潔劑放在地上，幼兒可能誤食中毒，應放在高處或上鎖櫃子。' },
+];
 
-    let foundDangers = [];
-    let currentDangerIndex = -1;
-    let gameCompleted = false;
+let foundDangers = [];
+let currentDangerIndex = -1;
+let gameCompleted = false;
 
-    function initGame() {
-      const image = document.getElementById('house-image');
-      const totalCountEl = document.getElementById('total-count');
-      if (totalCountEl) totalCountEl.textContent = dangerData.length;
-      image.addEventListener('load', createDangerPoints);
-      if (image.complete) createDangerPoints();
-    }
+function initGame(){
+  const img = document.getElementById('house-image');
+  document.getElementById('total-count').textContent = dangerData.length;
+  img.addEventListener('load', createDangerPoints);
+  if (img.complete) createDangerPoints();
 
-    function createDangerPoints() {
-      const container = document.querySelector('.image-container');
-      const image = document.getElementById('house-image');
+  // 校正工具
+  document.getElementById('toggleCalib').onclick = toggleCalib;
+  document.getElementById('copyJSON').onclick = copyJSON;
+}
 
-      image.onclick = function (event) {
-        const rect = image.getBoundingClientRect();
-        const x = ((event.clientX - rect.left) / rect.width) * 100;
-        const y = ((event.clientY - rect.top) / rect.height) * 100;
+function createDangerPoints(){
+  const container = document.querySelector('.image-wrap');
+  const img = document.getElementById('house-image');
 
-        dangerData.forEach((danger, index) => {
-          if (foundDangers.includes(index)) return;
-          const distance = Math.hypot(x - danger.x, y - danger.y);
-          if (distance <= 8) {
-            revealDangerPoint(index);
-            openDangerModal(index);
-          }
-        });
-      };
+  img.onclick = (e)=>{
+    const rect = img.getBoundingClientRect();
+    const x = ((e.clientX - rect.left)/rect.width)*100;
+    const y = ((e.clientY - rect.top)/rect.height)*100;
 
-      dangerData.forEach((danger, index) => {
-        const point = document.createElement('div');
-        point.className = 'danger-point';
-        point.style.left = danger.x + '%';
-        point.style.top = danger.y + '%';
-        point.title = `${danger.room} - ${danger.title}`;
-        point.addEventListener('click', () => openDangerModal(index));
-        container.appendChild(point);
-      });
-    }
-
-    function revealDangerPoint(index) {
-      const els = document.querySelectorAll('.danger-point');
-      const el = els[index];
-      if (!el.classList.contains('revealed')) {
-        el.classList.add('revealed');
+    dangerData.forEach((d, i)=>{
+      if(foundDangers.includes(i)) return;
+      const dist = Math.hypot(x-d.x, y-d.y);
+      if(dist<=6.5){ // 命中半徑（可調）
+        revealPoint(i);
+        openDangerModal(i);
       }
+    });
+  };
+
+  // create hidden dots
+  dangerData.forEach((d, i)=>{
+    const el = document.createElement('div');
+    el.className = 'danger-point';
+    el.style.left = d.x+'%'; el.style.top = d.y+'%';
+    el.title = `${d.room} - ${d.title}`;
+    el.onclick = ()=>openDangerModal(i);
+    container.appendChild(el);
+  });
+
+  // 畫校正網格
+  drawGrid();
+}
+
+function revealPoint(i){
+  const els = document.querySelectorAll('.danger-point');
+  const el = els[i];
+  if(!el.classList.contains('revealed')) el.classList.add('revealed');
+}
+
+function openDangerModal(i){
+  if(foundDangers.includes(i)) return;
+  currentDangerIndex = i;
+  const d = dangerData[i];
+  document.getElementById('modal-title').textContent = `🚨 ${d.room} - ${d.title}`;
+  document.getElementById('modal-description').textContent = d.description;
+  document.getElementById('danger-modal').style.display='flex';
+}
+
+function closeDangerModal(){
+  document.getElementById('danger-modal').style.display='none';
+  if(currentDangerIndex!==-1){
+    addSticker(currentDangerIndex);
+    foundDangers.push(currentDangerIndex);
+    updateStats();
+    const els = document.querySelectorAll('.danger-point');
+    els[currentDangerIndex].classList.remove('revealed');
+    els[currentDangerIndex].style.display='none';
+    currentDangerIndex=-1;
+    if(foundDangers.length>=5 && !gameCompleted){
+      gameCompleted=true;
+      setTimeout(()=>document.getElementById('completion-modal').style.display='flex',500);
     }
+  }
+}
 
-    function openDangerModal(index) {
-      if (foundDangers.includes(index)) return;
-      currentDangerIndex = index;
-      const danger = dangerData[index];
-      document.getElementById('modal-title').textContent = `🚨 ${danger.room} - ${danger.title}`;
-      document.getElementById('modal-description').textContent = danger.description;
-      document.getElementById('danger-modal').style.display = 'flex';
-    }
+function closeCompletionModal(){
+  document.getElementById('completion-modal').style.display='none';
+}
 
-    function closeDangerModal() {
-      document.getElementById('danger-modal').style.display = 'none';
-      if (currentDangerIndex !== -1) {
-        addProtectionSticker(currentDangerIndex);
-        foundDangers.push(currentDangerIndex);
-        updateStats();
-        const els = document.querySelectorAll('.danger-point');
-        els[currentDangerIndex].classList.remove('revealed');
-        els[currentDangerIndex].style.display = 'none';
-        currentDangerIndex = -1;
-        if (foundDangers.length >= 5 && !gameCompleted) {
-          gameCompleted = true;
-          setTimeout(() => {
-            document.getElementById('completion-modal').style.display = 'flex';
-          }, 600);
-        }
-      }
-    }
+function addSticker(i){
+  const wrap = document.querySelector('.image-wrap');
+  const d = dangerData[i];
+  const s = document.createElement('div');
+  s.className='protection-sticker';
+  s.style.left = d.x+'%'; s.style.top = d.y+'%';
+  s.textContent='🛡️';
+  s.title=`已修正：${d.title}`;
+  wrap.appendChild(s);
+}
 
-    function addProtectionSticker(index) {
-      const container = document.querySelector('.image-container');
-      const danger = dangerData[index];
-      const sticker = document.createElement('div');
-      sticker.className = 'protection-sticker';
-      sticker.style.left = danger.x + '%';
-      sticker.style.top = danger.y + '%';
-      sticker.innerHTML = '🛡️';
-      sticker.title = `已修正：${danger.title}`;
-      container.appendChild(sticker);
-    }
+function updateStats(){
+  const found=foundDangers.length, total=dangerData.length;
+  const pct = Math.round((found/total)*100);
+  document.getElementById('found-count').textContent = found;
+  document.getElementById('progress').textContent = pct+'%';
+}
 
-    function updateStats() {
-      const foundCount = foundDangers.length;
-      const totalCount = dangerData.length;
-      const progress = Math.round((foundCount / totalCount) * 100);
-      document.getElementById('found-count').textContent = foundCount;
-      document.getElementById('progress').textContent = progress + '%';
-    }
+// ===== 校正模式：顯示所有點位＋鍵盤微調 =====
+let calib=false, selectedIndex=0;
+function toggleCalib(){
+  calib=!calib;
+  document.getElementById('toggleCalib').classList.toggle('active',calib);
+  document.getElementById('grid').style.display = calib?'block':'none';
+  const els = document.querySelectorAll('.danger-point');
+  els.forEach(el=>{ el.style.display = calib?'block':'none'; el.classList.remove('revealed'); });
+  if(calib){
+    selectedIndex=0;
+    highlightSelected();
+    window.addEventListener('keydown', onKey);
+  }else{
+    window.removeEventListener('keydown', onKey);
+    els.forEach(el=>{ el.style.display='none'; });
+  }
+}
 
-    function closeCompletionModal() {
-      document.getElementById('completion-modal').style.display = 'none';
-    }
+function highlightSelected(){
+  const els=document.querySelectorAll('.danger-point');
+  els.forEach((el,i)=>{
+    el.style.outline = (i===selectedIndex)?'3px solid #1e90ff':'none';
+  });
+}
 
-    window.onclick = function (event) {
-      const dangerModal = document.getElementById('danger-modal');
-      const completionModal = document.getElementById('completion-modal');
-      if (event.target === dangerModal) dangerModal.style.display = 'none';
-      if (event.target === completionModal) completionModal.style.display = 'none';
-    };
+function onKey(e){
+  const step = (e.shiftKey?1:0.2); // Shift=1%
+  if(e.key==='ArrowRight'){ dangerData[selectedIndex].x+=step; }
+  if(e.key==='ArrowLeft'){  dangerData[selectedIndex].x-=step; }
+  if(e.key==='ArrowUp'){    dangerData[selectedIndex].y-=step; }
+  if(e.key==='ArrowDown'){  dangerData[selectedIndex].y+=step; }
+  if(e.key==='a' || e.key==='A'){ selectedIndex=(selectedIndex-1+dangerData.length)%dangerData.length; }
+  if(e.key==='d' || e.key==='D'){ selectedIndex=(selectedIndex+1)%dangerData.length; }
+  // quick big steps
+  if(e.key==='w' || e.key==='W'){ dangerData[selectedIndex].y-=1; }
+  if(e.key==='s' || e.key==='S'){ dangerData[selectedIndex].y+=1; }
+  applyPositions(); highlightSelected();
+}
 
-    window.onload = initGame;
-  </script>
+function applyPositions(){
+  const els=document.querySelectorAll('.danger-point');
+  dangerData.forEach((d,i)=>{
+    els[i].style.left=d.x+'%';
+    els[i].style.top=d.y+'%';
+  });
+}
+
+function copyJSON(){
+  const simple = dangerData.map(({id,x,y,title,room,description})=>({id,x:+x.toFixed(1),y:+y.toFixed(1),title,room,description}));
+  const text = 'const dangerData = ' + JSON.stringify(simple, null, 2) + ';';
+  navigator.clipboard.writeText(text).then(()=>{
+    alert('座標 JSON 已複製到剪貼簿，可貼回程式碼中！');
+  });
+}
+
+// 畫 10% 網格，方便對齊
+function drawGrid(){
+  const wrap=document.querySelector('.image-wrap');
+  const cv=document.getElementById('gridcv');
+  const dpr=window.devicePixelRatio||1;
+  cv.width=wrap.clientWidth*dpr;
+  cv.height=wrap.clientHeight*dpr;
+  const ctx=cv.getContext('2d');
+  ctx.scale(dpr,dpr);
+  ctx.clearRect(0,0,wrap.clientWidth,wrap.clientHeight);
+  ctx.strokeStyle='#6b7bff'; ctx.lineWidth=1;
+  for(let i=0;i<=10;i++){
+    const x=wrap.clientWidth*(i/10), y=wrap.clientHeight*(i/10);
+    ctx.globalAlpha=.35;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,wrap.clientHeight); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(wrap.clientWidth,y); ctx.stroke();
+    ctx.globalAlpha=.7; ctx.fillStyle='#6b7bff'; ctx.font='12px system-ui';
+    ctx.fillText((i*10)+'%', x+4, 14);
+    ctx.fillText((i*10)+'%', 4, y-4);
+  }
+}
+
+window.onload = initGame;
+</script>
 </body>
 </html>

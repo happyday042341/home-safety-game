@@ -4,25 +4,115 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>居家安全守護者 - 找出潛在危險</title>
-  <!-- 已更新 dangerData 座標 -->
+  <style>
+    body { font-family: 'Microsoft JhengHei', Arial, sans-serif; background: #f0f0f0; margin: 0; padding: 20px; }
+    .game-container { max-width: 1200px; margin: auto; background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .game-header { background: linear-gradient(135deg, #ff6b6b, #ee5a24); color: white; padding: 20px; text-align: center; }
+    .game-title { font-size: 2rem; margin: 0; }
+    .instructions { padding: 20px; background: #e3f2fd; border-left: 5px solid #2196f3; }
+    .image-container { position: relative; display: flex; justify-content: center; padding: 20px; background: #fafafa; }
+    .house-image { max-width: 900px; width: 100%; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+    .danger-point { position: absolute; width: 30px; height: 30px; border-radius: 50%; border: 3px solid red; display: none; }
+    .danger-point.revealed { display: block; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(255,0,0,0.7);} 70%{box-shadow:0 0 0 20px rgba(255,0,0,0);} 100%{box-shadow:0 0 0 0 rgba(255,0,0,0);} }
+    .protection-sticker { position: absolute; width: 50px; height: 50px; border-radius: 50%; background: green; color: white; display: flex; align-items: center; justify-content: center; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; }
+    .modal-content { background: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 400px; }
+  </style>
 </head>
 <body>
+  <div class="game-container">
+    <div class="game-header">
+      <h1 class="game-title">🏠 居家安全守護者</h1>
+      <p>找出潛在危險，貼上守護標籤保護家人安全</p>
+    </div>
+    <div class="instructions">
+      <h3>🎯 遊戲說明</h3>
+      <p>點擊圖片中的危險點，貼上守護標籤！</p>
+    </div>
+    <div class="image-container">
+      <img id="house-image" class="house-image" src="https://i.postimg.cc/zGxLCdrT/Chat-GPT-Image-2025-7-2-02-52-51.png" alt="居家安全檢查圖" />
+    </div>
+  </div>
+  <div class="modal" id="danger-modal">
+    <div class="modal-content">
+      <h2 id="modal-title"></h2>
+      <p id="modal-description"></p>
+      <button onclick="closeDangerModal()">貼上守護標籤 🛡️</button>
+    </div>
+  </div>
   <script>
     const dangerData = [
-      { x: 20, y: 28, title: "廚房爐火沒關", description: "鍋子在爐上煮東西但沒關火也沒蓋鍋蓋，有火災和燙傷風險。", room: "廚房" },
-      { x: 14, y: 32, title: "刀具未收納", description: "刀子放在桌上沒收好，容易造成割傷，應放入刀架或抽屜。", room: "廚房" },
-      { x: 10, y: 35, title: "瓦斯爐旁毛巾", description: "瓦斯爐邊晾毛巾有火災風險，毛巾應遠離火源晾曬。", room: "廚房" },
-      { x: 58, y: 20, title: "窗簾拉繩", description: "低掛的窗簾拉繩沒有綁起來，可能造成幼兒纏繞危險，應綁高或使用安全扣。", room: "客廳" },
-      { x: 70, y: 28, title: "藥品放置不當", description: "茶几上放置藥品，幼兒容易誤食，應放在高處或上鎖櫃子裡。", room: "客廳" },
-      { x: 53, y: 32, title: "桌角鋒利", description: "茶几四角鋒利，幼兒跑動時容易撞傷，應安裝防撞角套。", room: "客廳" },
-      { x: 83, y: 40, title: "電暖爐放地上", description: "電暖爐放在地上，幼兒可能拉扯電線燙傷，應放在安全高處。", room: "客廳" },
-      { x: 75, y: 20, title: "窗台過低", description: "窗戶窗台高度很低，幼兒容易爬上跌落，應安裝窗戶安全鎖。", room: "客廳" },
-      { x: 33, y: 70, title: "嬰兒床無護欄", description: "嬰兒床邊沒有護欄，嬰兒可能跌落，應安裝床邊護欄。", room: "房間" },
-      { x: 22, y: 75, title: "地面散落小零件", description: "小零件掉在地上，嬰兒可能誤食窒息，應立即清理。", room: "房間" },
-      { x: 70, y: 75, title: "地板濕滑", description: "浴室地板濕滑沒有防滑墊，容易滑倒受傷，應鋪設防滑墊。", room: "浴室" },
-      { x: 78, y: 65, title: "剪刀放洗手台", description: "剪刀放在洗手台上，幼兒容易拿到受傷，應收納在安全處。", room: "浴室" },
-      { x: 65, y: 68, title: "清潔劑亂放", description: "清潔劑放在地上，幼兒可能誤食中毒，應放在高處或上鎖櫃子。", room: "浴室" }
-    ];
+  // 廚房
+  { x: 20, y: 28, title: "廚房爐火沒關", description: "鍋子在爐上煮東西但沒關火也沒蓋鍋蓋，有火災和燙傷風險。", room: "廚房" },
+  { x: 14, y: 32, title: "刀具未收納", description: "刀子放在桌上沒收好，容易造成割傷，應放入刀架或抽屜。", room: "廚房" },
+  { x: 10, y: 35, title: "瓦斯爐旁毛巾", description: "瓦斯爐邊晾毛巾有火災風險，毛巾應遠離火源晾曬。", room: "廚房" },
+
+  // 客廳
+  { x: 58, y: 20, title: "窗簾拉繩", description: "低掛的窗簾拉繩沒有綁起來，可能造成幼兒纏繞危險，應綁高或使用安全扣。", room: "客廳" },
+  { x: 70, y: 28, title: "藥品放置不當", description: "茶几上放置藥品，幼兒容易誤食，應放在高處或上鎖櫃子裡。", room: "客廳" },
+  { x: 53, y: 32, title: "桌角鋒利", description: "茶几四角鋒利，幼兒跑動時容易撞傷，應安裝防撞角套。", room: "客廳" },
+  { x: 83, y: 40, title: "電暖爐放地上", description: "電暖爐放在地上，幼兒可能拉扯電線燙傷，應放在安全高處。", room: "客廳" },
+  { x: 75, y: 20, title: "窗台過低", description: "窗戶窗台高度很低，幼兒容易爬上跌落，應安裝窗戶安全鎖。", room: "客廳" },
+
+  // 房間
+  { x: 33, y: 70, title: "嬰兒床無護欄", description: "嬰兒床邊沒有護欄，嬰兒可能跌落，應安裝床邊護欄。", room: "房間" },
+  { x: 22, y: 75, title: "地面散落小零件", description: "小零件掉在地上，嬰兒可能誤食窒息，應立即清理。", room: "房間" },
+
+  // 浴室
+  { x: 70, y: 75, title: "地板濕滑", description: "浴室地板濕滑沒有防滑墊，容易滑倒受傷，應鋪設防滑墊。", room: "浴室" },
+  { x: 78, y: 65, title: "剪刀放洗手台", description: "剪刀放在洗手台上，幼兒容易拿到受傷，應收納在安全處。", room: "浴室" },
+  { x: 65, y: 68, title: "清潔劑亂放", description: "清潔劑放在地上，幼兒可能誤食中毒，應放在高處或上鎖櫃子。", room: "浴室" }
+];
+
+    let foundDangers = [];
+    let currentDangerIndex = -1;
+
+    function initGame() {
+      const image = document.getElementById('house-image');
+      image.addEventListener('click', (event) => {
+        const rect = image.getBoundingClientRect();
+        const x = ((event.clientX - rect.left) / rect.width) * 100;
+        const y = ((event.clientY - rect.top) / rect.height) * 100;
+        dangerData.forEach((danger, index) => {
+          if (foundDangers.includes(index)) return;
+          const dist = Math.hypot(x - danger.x, y - danger.y);
+          if (dist <= 8) { revealDangerPoint(index); openDangerModal(index); }
+        });
+      });
+      dangerData.forEach((danger, index) => {
+        const point = document.createElement('div');
+        point.className = 'danger-point';
+        point.style.left = danger.x + '%'; point.style.top = danger.y + '%';
+        document.querySelector('.image-container').appendChild(point);
+      });
+    }
+
+    function revealDangerPoint(index) {
+      document.querySelectorAll('.danger-point')[index].classList.add('revealed');
+    }
+
+    function openDangerModal(index) {
+      currentDangerIndex = index;
+      document.getElementById('modal-title').textContent = `🚨 ${dangerData[index].room} - ${dangerData[index].title}`;
+      document.getElementById('modal-description').textContent = dangerData[index].description;
+      document.getElementById('danger-modal').style.display = 'flex';
+    }
+
+    function closeDangerModal() {
+      document.getElementById('danger-modal').style.display = 'none';
+      if (currentDangerIndex !== -1) {
+        foundDangers.push(currentDangerIndex);
+        const sticker = document.createElement('div');
+        sticker.className = 'protection-sticker';
+        sticker.style.left = dangerData[currentDangerIndex].x + '%';
+        sticker.style.top = dangerData[currentDangerIndex].y + '%';
+        sticker.innerHTML = '🛡️';
+        document.querySelector('.image-container').appendChild(sticker);
+      }
+    }
+
+    window.onload = initGame;
   </script>
 </body>
 </html>

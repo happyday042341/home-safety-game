@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
@@ -30,11 +31,21 @@
     .btn{appearance:none;border:0;border-radius:24px;padding:12px 20px;background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:#fff;font-weight:600;cursor:pointer}
     .btn:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(0,0,0,.2)}
     /* 校正模式 */
-    .toolbar{display:flex;gap:8px;justify-content:center;padding:10px;background:#f2f5ff;border-top:1px solid #e6ebff}
+    .toolbar{display:flex;gap:8px;justify-content:center;align-items:center;padding:10px;background:#f2f5ff;border-top:1px solid #e6ebff;flex-wrap:wrap}
     .toolbtn{border:1px solid #d0d7ff;background:#fff;border-radius:8px;padding:6px 10px;cursor:pointer}
     .toolbtn.active{background:#e6ecff}
     .grid{position:absolute;inset:24px;pointer-events:none;z-index:1}
     .grid canvas{width:100%;height:100%;opacity:.35}
+    /* 手機控制面板（只在校正模式顯示） */
+    .calib-panel{display:none;gap:8px;justify-content:center;align-items:center;background:#fff;border-top:1px solid #eee;padding:10px}
+    .calib-panel.show{display:flex;flex-wrap:wrap}
+    .pad{display:grid;grid-template-columns:repeat(3,56px);grid-template-rows:repeat(3,44px);gap:8px;margin:6px}
+    .pad button{border:1px solid #d0d7ff;background:#f9fbff;border-radius:10px;font-size:18px}
+    .pad .blank{visibility:hidden}
+    .col{display:flex;flex-direction:column;gap:6px;margin:6px}
+    .row{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap}
+    .pill{border:1px solid #d0d7ff;background:#fff;border-radius:999px;padding:6px 10px}
+    .now{font-weight:700;color:#334155}
   </style>
 </head>
 <body>
@@ -60,7 +71,36 @@
     <div class="toolbar">
       <button class="toolbtn" id="toggleCalib">切換校正模式</button>
       <button class="toolbtn" id="copyJSON">複製座標 JSON</button>
-      <span style="color:#666">（校正模式：顯示所有點位；A/D 選點，方向鍵移 0.2%，Shift+方向鍵 1%，W/S 上下 ±1%）</span>
+      <span class="pill">目前：<span id="nowName" class="now">—</span></span>
+      <span style="color:#666">（電腦：A/D 選點、方向鍵移 0.2%，Shift=1%；手機用下方按鈕）</span>
+    </div>
+
+    <!-- 手機校正控制面板 -->
+    <div class="calib-panel" id="calibPanel">
+      <div class="col">
+        <button class="toolbtn" id="prevBtn">🔙 上一個</button>
+        <button class="toolbtn" id="nextBtn">🔜 下一個</button>
+      </div>
+      <div class="pad">
+        <button class="blank"></button>
+        <button class="toolbtn" data-action="move" data-dx="0" data-dy="-0.2">⬆️</button>
+        <button class="blank"></button>
+        <button class="toolbtn" data-action="move" data-dx="-0.2" data-dy="0">⬅️</button>
+        <button class="toolbtn" data-action="move" data-dx="0" data-dy="0">●</button>
+        <button class="toolbtn" data-action="move" data-dx="0.2" data-dy="0">➡️</button>
+        <button class="blank"></button>
+        <button class="toolbtn" data-action="move" data-dx="0" data-dy="0.2">⬇️</button>
+        <button class="blank"></button>
+      </div>
+      <div class="row">
+        <button class="toolbtn" data-action="move" data-dx="-1" data-dy="0">⬅️⬅️ (-1%)</button>
+        <button class="toolbtn" data-action="move" data-dx="1" data-dy="0">➡️➡️ (+1%)</button>
+        <button class="toolbtn" data-action="move" data-dx="0" data-dy="-1">⬆️⬆️ (-1%)</button>
+        <button class="toolbtn" data-action="move" data-dx="0" data-dy="1">⬇️⬇️ (+1%)</button>
+      </div>
+      <div class="row">
+        <button class="toolbtn" id="copyJSON2">📋 複製座標 JSON</button>
+      </div>
     </div>
   </div>
 
@@ -112,6 +152,22 @@ function initGame(){
 
   document.getElementById('toggleCalib').onclick = toggleCalib;
   document.getElementById('copyJSON').onclick = copyJSON;
+  document.getElementById('copyJSON2').onclick = copyJSON;
+  document.getElementById('prevBtn').onclick = ()=>{ selectIndex((selectedIndex-1+dangerData.length)%dangerData.length); };
+  document.getElementById('nextBtn').onclick = ()=>{ selectIndex((selectedIndex+1)%dangerData.length); };
+
+  // 手機按鈕事件（點擊一次移動；長按連續移動）
+  document.querySelectorAll('[data-action="move"]').forEach(btn=>{
+    const dx = parseFloat(btn.dataset.dx), dy = parseFloat(btn.dataset.dy);
+    let timer=null;
+    const step = ()=>{ moveBy(dx, dy); };
+    const start = ()=>{ step(); timer=setInterval(step, 100); };
+    const stop = ()=>{ if(timer){ clearInterval(timer); timer=null; } };
+    btn.addEventListener('mousedown', start);
+    btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); start(); }, {passive:false});
+    ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>btn.addEventListener(ev, stop));
+    btn.addEventListener('click', (e)=>{ e.preventDefault(); step(); }); // 單擊也有效
+  });
 }
 
 function createDangerPoints(){
@@ -119,6 +175,7 @@ function createDangerPoints(){
   const img = document.getElementById('house-image');
 
   img.onclick = (e)=>{
+    if(calib) return; // 校正模式不觸發遊戲點擊
     const rect = img.getBoundingClientRect();
     const x = ((e.clientX - rect.left)/rect.width)*100;
     const y = ((e.clientY - rect.top)/rect.height)*100;
@@ -199,53 +256,56 @@ function updateStats(){
   document.getElementById('progress').textContent = pct+'%';
 }
 
-// ===== 校正模式：顯示所有點位＋鍵盤微調 =====
+// ===== 校正模式 =====
 let calib=false, selectedIndex=0;
+
 function toggleCalib(){
   calib=!calib;
   document.getElementById('toggleCalib').classList.toggle('active',calib);
   document.getElementById('grid').style.display = calib?'block':'none';
+  document.getElementById('calibPanel').classList.toggle('show',calib);
+
   const els = document.querySelectorAll('.danger-point');
   els.forEach(el=>{
     if(calib){ el.classList.add('calib'); }
-    else{ el.classList.remove('calib'); }
+    else{ el.classList.remove('calib'); el.style.display='none'; }
   });
+
   if(calib){
-    selectedIndex=0;
-    highlightSelected();
+    selectIndex(0);
     window.addEventListener('keydown', onKey);
   }else{
     window.removeEventListener('keydown', onKey);
-    els.forEach(el=>{ el.style.display='none'; });
   }
 }
 
-function highlightSelected(){
+function selectIndex(i){
+  selectedIndex = i;
   const els=document.querySelectorAll('.danger-point');
-  els.forEach((el,i)=>{
-    el.style.outline = (i===selectedIndex)?'3px solid #1e90ff':'none';
-  });
+  els.forEach((el,idx)=>{ el.style.outline = (idx===selectedIndex)?'3px solid #1e90ff':'none'; });
+  const d = dangerData[selectedIndex];
+  document.getElementById('nowName').textContent = `${d.room} - ${d.title}`;
 }
 
 function onKey(e){
   const step = (e.shiftKey?1:0.2);
-  if(e.key==='ArrowRight'){ dangerData[selectedIndex].x+=step; }
-  if(e.key==='ArrowLeft'){  dangerData[selectedIndex].x-=step; }
-  if(e.key==='ArrowUp'){    dangerData[selectedIndex].y-=step; }
-  if(e.key==='ArrowDown'){  dangerData[selectedIndex].y+=step; }
-  if(e.key==='a' || e.key==='A'){ selectedIndex=(selectedIndex-1+dangerData.length)%dangerData.length; }
-  if(e.key==='d' || e.key==='D'){ selectedIndex=(selectedIndex+1)%dangerData.length; }
-  if(e.key==='w' || e.key==='W'){ dangerData[selectedIndex].y-=1; }
-  if(e.key==='s' || e.key==='S'){ dangerData[selectedIndex].y+=1; }
-  applyPositions(); highlightSelected();
+  if(e.key==='ArrowRight'){ moveBy(step,0); }
+  if(e.key==='ArrowLeft'){  moveBy(-step,0); }
+  if(e.key==='ArrowUp'){    moveBy(0,-step); }
+  if(e.key==='ArrowDown'){  moveBy(0, step); }
+  if(e.key==='a' || e.key==='A'){ selectIndex((selectedIndex-1+dangerData.length)%dangerData.length); }
+  if(e.key==='d' || e.key==='D'){ selectIndex((selectedIndex+1)%dangerData.length); }
+  if(e.key==='w' || e.key==='W'){ moveBy(0,-1); }
+  if(e.key==='s' || e.key==='S'){ moveBy(0, 1); }
 }
 
-function applyPositions(){
-  const els=document.querySelectorAll('.danger-point');
-  dangerData.forEach((d,i)=>{
-    els[i].style.left=d.x+'%';
-    els[i].style.top=d.y+'%';
-  });
+function moveBy(dx,dy){
+  const d = dangerData[selectedIndex];
+  d.x = Math.max(0, Math.min(100, d.x + dx));
+  d.y = Math.max(0, Math.min(100, d.y + dy));
+  const el = document.querySelectorAll('.danger-point')[selectedIndex];
+  el.style.left = d.x + '%';
+  el.style.top  = d.y + '%';
 }
 
 function copyJSON(){
